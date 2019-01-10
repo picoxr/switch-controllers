@@ -14,10 +14,9 @@
 再用Controller.UPvr_GetMainHandNess()方法判断当前手柄主副。
 
 ## Usage：
-- 场景位置： Assets -> Scene -> PicoNeoHandleSwitch
-- 点击按钮 "切换手柄" 切换主副手柄
+- Scene： Assets -> Scene -> PicoNeoHandleSwitch
 
-## Announcements：
+- 点击按钮 "切换手柄" 切换主副手柄
 - 本demo适用于PicoNeo
 - 切换功能需要同时连接两个手柄
 

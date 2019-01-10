@@ -17,9 +17,9 @@ public class Pvr_UnitySDKHeadTrack : MonoBehaviour
 
     public bool trackPosition = true;
 
-    public Transform target;  // 设定位置 
+    public Transform target;  
 
-    private bool updated = false;  // 是否更新完成标志
+    private bool updated = false;  
 
     private Vector3 startPosition;
 

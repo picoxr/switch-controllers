@@ -51,6 +51,7 @@ namespace Pvr_UnitySDKAPI
         public PvrControllerKey HomeKey;
         public PvrControllerKey VolumeDownKey;
         public PvrControllerKey VolumeUpKey;
+        public PvrControllerKey TriggerKey;
         public Vector2 TouchPadPosition;
         public int TriggerNum;
         public Quaternion Rotation;
@@ -62,7 +63,6 @@ namespace Pvr_UnitySDKAPI
         public bool isVertical;
         public bool isHorizontal;
         public bool touchClock;
-        public bool triggerClick;
         public bool triggerClock;
         public ControllerState ConnectState;
         public SwipeDirection SwipeDirection;
@@ -75,6 +75,7 @@ namespace Pvr_UnitySDKAPI
             HomeKey = new PvrControllerKey();
             VolumeDownKey = new PvrControllerKey();
             VolumeUpKey = new PvrControllerKey();
+            TriggerKey = new PvrControllerKey();
             TouchPadPosition = new Vector2();
             Rotation = new Quaternion();
             Position = new Vector3();
@@ -84,9 +85,9 @@ namespace Pvr_UnitySDKAPI
             isVertical = false;
             isHorizontal = false;
             touchClock = false;
-            triggerClick = false;
             triggerClock = false;
             Battery = 0;
+            TriggerNum = 0;
             ConnectState = ControllerState.Error;
             SwipeDirection = SwipeDirection.No;
             TouchPadClick = TouchPadClick.No;
@@ -97,11 +98,10 @@ namespace Pvr_UnitySDKAPI
     {
         Error = -1,
         DisConnected = 0,
-        Connecting = 1,
-        Connected = 2,
+        Connected = 1,
     }
     /// <summary>
-    /// 手柄按键值
+    /// controller key value
     /// </summary>
     public enum Pvr_KeyCode
     {
@@ -110,9 +110,10 @@ namespace Pvr_UnitySDKAPI
         HOME = 3,
         VOLUMEUP = 4,
         VOLUMEDOWN = 5,
+        TRIGGER = 6,
     }
     /// <summary>
-    /// 手柄Touchpad滑动方向
+    /// The controller Touchpad slides in the direction.
     /// </summary>
     public enum SwipeDirection
     {
@@ -124,7 +125,7 @@ namespace Pvr_UnitySDKAPI
     }
 
     /// <summary>
-    /// 手柄Touchpad点击方向
+    /// The controller Touchpad click the direction.
     /// </summary>
     public enum TouchPadClick
     {
@@ -152,7 +153,7 @@ namespace Pvr_UnitySDKAPI
         private static extern void Pvr_GetWristPose( float[] rotation,  float[] position);
         [DllImport(LibFileName, CallingConvention = CallingConvention.Cdecl)]
         private static extern void Pvr_GetShoulderPose( float[] rotation,  float[] position);
-           [DllImport(LibFileName, CallingConvention = CallingConvention.Cdecl)]
+        [DllImport(LibFileName, CallingConvention = CallingConvention.Cdecl)]
         private static extern void Pvr_SetArmModelParameters(int hand, int gazeType, float elbowHeight, float elbowDepth, float pointerTiltAngle);
 #endif
 #endregion
@@ -185,28 +186,10 @@ namespace Pvr_UnitySDKAPI
             switch (hand)
             {
                 case 0:
-                    if (Pvr_ControllerManager.controllerlink.cvserviceBindState)
-                    {
-                        Pvr_ControllerManager.controllerlink.Controller0.ConnectState = Pvr_ControllerManager.GetControllerConnectionState(0) == 1 ? ControllerState.Connected : ControllerState.DisConnected;
-                    }
-                    else
-                    {
-                        switch (Pvr_ControllerManager.GetControllerConnectionState(0))
-                        {
-                            case 2:
-                                Pvr_ControllerManager.controllerlink.Controller0.ConnectState = ControllerState.Connected;
-                                break;
-                            case 1:
-                                Pvr_ControllerManager.controllerlink.Controller0.ConnectState = ControllerState.Connecting;
-                                break;
-                            default:
-                                Pvr_ControllerManager.controllerlink.Controller0.ConnectState = ControllerState.DisConnected;
-                                break;
-                        }
-                    }
+                    Pvr_ControllerManager.controllerlink.Controller0.ConnectState = Pvr_ControllerManager.GetControllerConnectionState(0) == 1 ? ControllerState.Connected : ControllerState.DisConnected;
                     return Pvr_ControllerManager.controllerlink.Controller0.ConnectState;
                 case 1:
-                    if (Pvr_ControllerManager.controllerlink.cvserviceBindState)
+                    if (Pvr_ControllerManager.controllerlink.neoserviceStarted)
                     {
                         Pvr_ControllerManager.controllerlink.Controller1.ConnectState = Pvr_ControllerManager.GetControllerConnectionState(1) == 1 ? ControllerState.Connected : ControllerState.DisConnected;
                     }
@@ -216,7 +199,7 @@ namespace Pvr_UnitySDKAPI
             return ControllerState.Error;
         }
         /// <summary>
-        /// 获取手柄rotation数据
+        /// Get the controller rotation data.
         /// </summary>
         /// <param name="hand">0,1</param>
         /// <returns></returns>
@@ -232,7 +215,7 @@ namespace Pvr_UnitySDKAPI
             return new Quaternion(0, 0, 0, 1);
         }
         /// <summary>
-        /// 获取手柄position数据
+        /// Get the controller position data.
         /// </summary>
         /// <param name="hand">0,1</param>
         /// <returns></returns>
@@ -248,11 +231,11 @@ namespace Pvr_UnitySDKAPI
             return new Vector3(0, 0, 0);
         }
         /// <summary>
-        /// 获取手柄trigger键的值（仅适用于CV Controller）
+        /// Get the value of the trigger key 
         /// </summary>
         /// <param name="hand"></param>
-        /// <returns></returns>
-        public static int Upvr_GetControllerTriggerValue(int hand)
+        /// <returns>Neo:0-255,Goblin2:0/1</returns>
+        public static int UPvr_GetControllerTriggerValue(int hand)
         {
             switch (hand)
             {
@@ -263,25 +246,8 @@ namespace Pvr_UnitySDKAPI
             }
             return 0;
         }
-
         /// <summary>
-        /// 手柄trigger点击功能（仅适用于CV Controller）
-        /// </summary>
-        /// <param name="hand"></param>
-        /// <returns></returns>
-        public static bool Upvr_ControllerTriggerClick(int hand)
-        {
-            switch (hand)
-            {
-                case 0:
-                    return Pvr_ControllerManager.controllerlink.Controller0.triggerClick;
-                case 1:
-                    return Pvr_ControllerManager.controllerlink.Controller1.triggerClick;
-            }
-            return false;
-        }
-        /// <summary>
-        /// 获取手柄的电量，cv电量为1-10，goblin电量为1-4
+        /// Get the power of the controller, neo power is 1-10, goblin/goblin2 power is 1-4.
         /// </summary>
         public static int UPvr_GetControllerPower(int hand)
         {
@@ -295,7 +261,7 @@ namespace Pvr_UnitySDKAPI
             return 0;
         }
         /// <summary>
-        /// 获取触摸板的滑动方向
+        /// Get the sliding direction of the touchpad.
         /// </summary>
         /// <param name="hand"></param>
         /// <returns></returns>
@@ -311,7 +277,7 @@ namespace Pvr_UnitySDKAPI
             return SwipeDirection.No;
         }
         /// <summary>
-        /// 获取触摸板的点击方向
+        /// Get the click direction of the touchpad.
         /// </summary>
         /// <param name="hand"></param>
         /// <returns></returns>
@@ -328,9 +294,9 @@ namespace Pvr_UnitySDKAPI
         }
 
         /// <summary>
-        /// 获取按键状态，持续性状态，按下为true，抬起为false
+        /// Get the key state
         /// </summary>
-        /// <param name="hand">0,1，假如只有一个手柄则传0</param>
+        /// <param name="hand">0,1</param>
         /// <param name="key"></param>
         /// <returns></returns>
         public static bool UPvr_GetKey(int hand, Pvr_KeyCode key)
@@ -349,6 +315,8 @@ namespace Pvr_UnitySDKAPI
                         return Pvr_ControllerManager.controllerlink.Controller0.VolumeUpKey.State;
                     case Pvr_KeyCode.VOLUMEDOWN:
                         return Pvr_ControllerManager.controllerlink.Controller0.VolumeDownKey.State;
+                    case Pvr_KeyCode.TRIGGER:
+                        return Pvr_ControllerManager.controllerlink.Controller0.TriggerKey.State;
                     default:
                         return false;
                 }
@@ -367,6 +335,8 @@ namespace Pvr_UnitySDKAPI
                         return Pvr_ControllerManager.controllerlink.Controller1.VolumeUpKey.State;
                     case Pvr_KeyCode.VOLUMEDOWN:
                         return Pvr_ControllerManager.controllerlink.Controller1.VolumeDownKey.State;
+                    case Pvr_KeyCode.TRIGGER:
+                        return Pvr_ControllerManager.controllerlink.Controller1.TriggerKey.State;
                     default:
                         return false;
                 }
@@ -375,7 +345,7 @@ namespace Pvr_UnitySDKAPI
         }
 
         /// <summary>
-        /// 获取按键的按下状态，瞬时性状态，只在按下的时候响应一次
+        /// Get the pressed state of the key
         /// </summary>
         /// <param name="hand">0,1</param>
         /// <param name="key"></param>
@@ -396,6 +366,8 @@ namespace Pvr_UnitySDKAPI
                         return Pvr_ControllerManager.controllerlink.Controller0.VolumeUpKey.PressedDown;
                     case Pvr_KeyCode.VOLUMEDOWN:
                         return Pvr_ControllerManager.controllerlink.Controller0.VolumeDownKey.PressedDown;
+                    case Pvr_KeyCode.TRIGGER:
+                        return Pvr_ControllerManager.controllerlink.Controller0.TriggerKey.PressedDown;
                     default:
                         return false;
                 }
@@ -414,6 +386,8 @@ namespace Pvr_UnitySDKAPI
                         return Pvr_ControllerManager.controllerlink.Controller1.VolumeUpKey.PressedDown;
                     case Pvr_KeyCode.VOLUMEDOWN:
                         return Pvr_ControllerManager.controllerlink.Controller1.VolumeDownKey.PressedDown;
+                    case Pvr_KeyCode.TRIGGER:
+                        return Pvr_ControllerManager.controllerlink.Controller1.TriggerKey.PressedDown;
                     default:
                         return false;
                 }
@@ -422,7 +396,7 @@ namespace Pvr_UnitySDKAPI
         }
 
         /// <summary>
-        /// 获取按键的按下状态，瞬时性状态，只在按下的时候响应一次
+        /// Gets the lift state of the key.
         /// </summary>
         /// <param name="hand"></param>
         /// <param name="key"></param>
@@ -443,6 +417,8 @@ namespace Pvr_UnitySDKAPI
                         return Pvr_ControllerManager.controllerlink.Controller0.VolumeUpKey.PressedUp;
                     case Pvr_KeyCode.VOLUMEDOWN:
                         return Pvr_ControllerManager.controllerlink.Controller0.VolumeDownKey.PressedUp;
+                    case Pvr_KeyCode.TRIGGER:
+                        return Pvr_ControllerManager.controllerlink.Controller0.TriggerKey.PressedUp;
                     default:
                         return false;
                 }
@@ -461,6 +437,8 @@ namespace Pvr_UnitySDKAPI
                         return Pvr_ControllerManager.controllerlink.Controller1.VolumeUpKey.PressedUp;
                     case Pvr_KeyCode.VOLUMEDOWN:
                         return Pvr_ControllerManager.controllerlink.Controller1.VolumeDownKey.PressedUp;
+                    case Pvr_KeyCode.TRIGGER:
+                        return Pvr_ControllerManager.controllerlink.Controller1.TriggerKey.PressedUp;
                     default:
                         return false;
                 }
@@ -469,7 +447,7 @@ namespace Pvr_UnitySDKAPI
         }
 
         /// <summary>
-        /// 获取Key的状态，仅当长按0.5s时为true，一次性事件
+        /// Gets the long press state of the Key.
         /// </summary>
         public static bool UPvr_GetKeyLongPressed(int hand, Pvr_KeyCode key)
         {
@@ -487,6 +465,8 @@ namespace Pvr_UnitySDKAPI
                         return Pvr_ControllerManager.controllerlink.Controller0.VolumeUpKey.LongPressed;
                     case Pvr_KeyCode.VOLUMEDOWN:
                         return Pvr_ControllerManager.controllerlink.Controller0.VolumeDownKey.LongPressed;
+                    case Pvr_KeyCode.TRIGGER:
+                        return Pvr_ControllerManager.controllerlink.Controller0.TriggerKey.LongPressed;
                     default:
                         return false;
                 }
@@ -505,6 +485,8 @@ namespace Pvr_UnitySDKAPI
                         return Pvr_ControllerManager.controllerlink.Controller1.VolumeUpKey.LongPressed;
                     case Pvr_KeyCode.VOLUMEDOWN:
                         return Pvr_ControllerManager.controllerlink.Controller1.VolumeDownKey.LongPressed;
+                    case Pvr_KeyCode.TRIGGER:
+                        return Pvr_ControllerManager.controllerlink.Controller1.TriggerKey.LongPressed;
                     default:
                         return false;
                 }
@@ -531,7 +513,53 @@ namespace Pvr_UnitySDKAPI
             return false;
         }
         /// <summary>
-        /// 获取当前主控手为哪个 0/1
+        /// The service type that currently needs bind.
+        /// </summary>
+        /// <returns>1：Goblin service 2:Neo service </returns>
+        public static int UPvr_GetPreferenceDevice()
+        {
+            var trackingmode = Pvr_ControllerManager.controllerlink.trackingmode;
+            var systemproc = Pvr_ControllerManager.controllerlink.systemProp;
+            if (trackingmode == 0 || trackingmode == 1)
+            {
+                return 1;
+            }
+            if (trackingmode == 2)
+            {
+                return 2;
+            }
+            if (trackingmode == 3)
+            {
+                if (systemproc == 0 || systemproc == 1)
+                {
+                    return 1;
+                }
+                if (systemproc == 2)
+                {
+                    return 2;
+                }
+                if (systemproc == 3)
+                {
+                    return 1;
+                }
+            }
+            return 1;
+        }
+
+        public static bool UPvr_IsEnbleTrigger()
+        {
+            return Pvr_ControllerManager.controllerlink.IsEnbleTrigger();
+        }
+        /// <summary>
+        ///Gets the controller type of the current connection.
+        /// </summary>
+        /// <returns>0: no connection 1：goblin1 2:Neo 3:goblin2 </returns>
+        public static int UPvr_GetDeviceType()
+        {
+            return Pvr_ControllerManager.controllerlink.GetDeviceType();
+        }
+        /// <summary>
+        /// Gets the current master hand for which 0/1.
         /// </summary>
         /// <returns></returns>
         public static int UPvr_GetMainHandNess()
@@ -539,98 +567,103 @@ namespace Pvr_UnitySDKAPI
             return Pvr_ControllerManager.controllerlink.GetMainControllerIndex();
         }
         /// <summary>
-        /// 设置当前手柄为主控手
+        /// Set the current controller as the master controller.
         /// </summary>
         public static void UPvr_SetMainHandNess(int hand)
         {
             Pvr_ControllerManager.controllerlink.SetMainController(hand);
         }
         /// <summary>
-        /// 获取当前手柄的能力（3dof/6dof）
+        /// Ability to obtain the current controller (3dof/6dof)
         /// </summary>
         /// <param name="hand">0/1</param>
-        /// <returns>-1:错误码 0：默认值（可以认为是6dof）  1：3dof手柄 2:6dof手柄</returns>
+        /// <returns>-1:error 0：6dof  1：3dof 2:6dof </returns>
         public static int UPvr_GetControllerAbility(int hand)
         {
             return Pvr_ControllerManager.controllerlink.GetControllerAbility(hand);
         }
-        //获取版本号 deviceType：0-station 1-手柄0  2-手柄1
-        public void UPvr_GetDeviceVersion(int deviceType)
+        //get controller version
+        public static string UPvr_GetControllerVersion()
+        {
+            return Pvr_ControllerManager.controllerlink.GetControllerVersion();
+        }
+        //Get version number deviceType: 0-station 1- controller 0 2- controller 1.
+        public static void UPvr_GetDeviceVersion(int deviceType)
         {
             Pvr_ControllerManager.controllerlink.GetDeviceVersion(deviceType);
         }
-        //获取手柄Sn号  controllerSerialNum : 0-手柄0  1-手柄1
-        public void UPvr_GetControllerSnCode(int controllerSerialNum)
+        //Get the controller Sn number controllerSerialNum: 0- controller 0 1- controller 1.
+        public static void UPvr_GetControllerSnCode(int controllerSerialNum)
         {
             Pvr_ControllerManager.controllerlink.GetControllerSnCode(controllerSerialNum);
         }
-        //解绑手柄 controllerSerialNum : 0-手柄0  1-手柄1
-        public void UPvr_SetControllerUnbind(int controllerSerialNum)
+        //Unlash the controller controllerSerialNum: 0- controller 0 1- controller 1.
+        public static void UPvr_SetControllerUnbind(int controllerSerialNum)
         {
             Pvr_ControllerManager.controllerlink.SetControllerUnbind(controllerSerialNum);
         }
-        //重启station
-        public void UPvr_SetStationRestart()
+        //Restart the station
+        public static void UPvr_SetStationRestart()
         {
             Pvr_ControllerManager.controllerlink.SetStationRestart();
         }
-        //发起station OTA升级
-        public void UPvr_StartStationOtaUpdate()
+        //Launch station OTA upgrade.
+        public static void UPvr_StartStationOtaUpdate()
         {
             Pvr_ControllerManager.controllerlink.StartStationOtaUpdate();
         }
-        //发起手柄ota升级 mode：1-RF 升级通讯模块 2-升级STM32模块 ； controllerSerialNum : 0-手柄0  1-手柄1
-        public void UPvr_StartControllerOtaUpdate(int mode, int controllerSerialNum)
+        //Launch controller ota upgrade mode: 1-rf upgrade communication module 2- upgrade STM32 module;ControllerSerialNum: 0- controller 0 1- controller 1.
+        public static void UPvr_StartControllerOtaUpdate(int mode, int controllerSerialNum)
         {
             Pvr_ControllerManager.controllerlink.StartControllerOtaUpdate(mode, controllerSerialNum);
         }
-        // 进入配对模式 controllerSerialNum：0-手柄0  1-手柄1
-        public void UPvr_EnterPairMode(int controllerSerialNum)
+        //Enter the pairing mode controllerSerialNum: 0- controller 0 1- controller 1.
+        public static void UPvr_EnterPairMode(int controllerSerialNum)
         {
             Pvr_ControllerManager.controllerlink.EnterPairMode(controllerSerialNum);
         }
-        //手柄关机controllerSerialNum：0-手柄0  1-手柄1
-        public void UPvr_SetControllerShutdown(int controllerSerialNum)
+        //controller shutdown controllerSerialNum: 0- controller 0 1- controller 1.
+        public static void UPvr_SetControllerShutdown(int controllerSerialNum)
         {
             Pvr_ControllerManager.controllerlink.SetControllerShutdown(controllerSerialNum);
         }
-        // 获取当前station的配对状态 返回值0-未配对状态 1-正在配对状态
-        public int UPvr_GetStationPairState()
+        // Retrieves the pairing status of the current station with 0- unpaired state 1- pairing.
+        public static int UPvr_GetStationPairState()
         {
             return Pvr_ControllerManager.controllerlink.GetStationPairState();
         }
-        //获取station ota升级进度
-        public int UPvr_GetStationOtaUpdateProgress()
+        //Get the upgrade of station ota.
+        public static int UPvr_GetStationOtaUpdateProgress()
         {
             return Pvr_ControllerManager.controllerlink.GetStationOtaUpdateProgress();
         }
-        //获取Controller ota升级进度
-        //正常0-100
-        //异常 101 : 没有收到成功升级的标识 102：手柄没有进入升级状态 103：升级中断异常
-        public int UPvr_GetControllerOtaUpdateProgress()
+        //Get the Controller ota upgrade progress.
+        //Normal 0-100
+        //Exception 101: failed to receive a successful upgrade of id 102: the controller did not enter the upgrade status 103: upgrade interrupt exception.
+        public static int UPvr_GetControllerOtaUpdateProgress()
         {
             return Pvr_ControllerManager.controllerlink.GetControllerOtaUpdateProgress();
         }
-        //同时获取手柄的版本号和SN号  controllerSerialNum：0-手柄0  1-手柄1
-        public void UPvr_GetControllerVersionAndSN(int controllerSerialNum)
+        //Also get the controller version number and SN number controllerSerialNum: 0- controller 0 1- controller 1.
+        public static void UPvr_GetControllerVersionAndSN(int controllerSerialNum)
         {
             Pvr_ControllerManager.controllerlink.GetControllerVersionAndSN(controllerSerialNum);
         }
-        //获取手柄的唯一识别码
-        public void UPvr_GetControllerUniqueID()
+        //Gets the unique identifier of the controller.
+        public static void UPvr_GetControllerUniqueID()
         {
             Pvr_ControllerManager.controllerlink.GetControllerUniqueID();
         }
-        //将station从当前的配对模式中中断出来
+        //Disconnect the station from the current pairing mode.
         public void UPvr_InterruptStationPairMode()
         {
             Pvr_ControllerManager.controllerlink.InterruptStationPairMode();
         }
-
+        
         // <summary>
-        // 获取手柄的陀螺仪数据
+        // Obtain the controller's gyroscope data.
         // </summary>
-        public static Vector3 Upvr_GetAngularVelocity(int num)
+        public static Vector3 UPvr_GetAngularVelocity(int num)
         {
             Vector3 Aglr = new Vector3(0.0f, 0.0f, 0.0f);
 #if ANDROID_DEVICE
@@ -643,7 +676,7 @@ namespace Pvr_UnitySDKAPI
             return Aglr;
         }       
 
-        public static Vector3 Upvr_GetAcceleration(int num)
+        public static Vector3 UPvr_GetAcceleration(int num)
         {
             Vector3 Acc = new Vector3(0.0f, 0.0f, 0.0f);
 #if ANDROID_DEVICE

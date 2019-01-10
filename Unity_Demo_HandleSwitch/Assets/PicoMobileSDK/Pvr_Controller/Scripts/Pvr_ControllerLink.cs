@@ -3,7 +3,7 @@
 // File: Pvr_Controller
 // Author: Yangel.Yan
 // Date:  2017/01/11
-// Discription: The demo of using controller
+// Discription: The manager of using controller
 ///////////////////////////////////////////////////////////////////////////////
 #if !UNITY_EDITOR
 #if UNITY_ANDROID
@@ -37,16 +37,17 @@ public class Pvr_ControllerLink
     public string hummingBirdMac;
     public int hummingBirdRSSI;
     public string lark2key;
-    public bool hbserviceBindState = false;
-    public bool cvserviceBindState = false;
+    public bool goblinserviceStarted = false;
+    public bool neoserviceStarted = false;
     public bool controller0Connected = false;
     public bool controller1Connected = false;
     public ControllerHand Controller0;
     public ControllerHand Controller1;
-    public int platFormType = -1; //0 phone，1 Pico Neo，2 Pico Goblin 3 Pico CV
-    public int trackingmode = -1;
-    public int systemProp = -1;   //0默认cv6dof 1hb3dof 2优先cv6dof 3优先cv3dof
+    public int platFormType = -1; //0 phone，1 Pico Neo DK，2 Pico Goblin 3 Pico Neo
+    public int trackingmode = -1; //ability 0:null,1:3dof,2:6dof 3:自定义
+    public int systemProp = -1;   //0：goblin1 1：goblin1 2:neo 3:goblin2
     public int enablehand6dofbyhead = -1;
+    public bool switchHomeKey = true;
     public Pvr_ControllerLink(string name)
     {
         gameobjname = name;
@@ -72,16 +73,16 @@ public class Pvr_ControllerLink
             Pvr_UnitySDKAPI.System.Pvr_SetInitActivity(activity.GetRawObject(), javaHummingbirdClass.GetRawClass());
             int enumindex = (int)GlobalIntConfigs.PLATFORM_TYPE;
             Render.UPvr_GetIntConfig(enumindex, ref platFormType);
-            PLOG.I("platform" + platFormType);
+            PLOG.I("PvrLog platform" + platFormType);
             enumindex = (int)GlobalIntConfigs.TRACKING_MODE;
             Render.UPvr_GetIntConfig(enumindex, ref trackingmode);
-            PLOG.I("trackingmode" + trackingmode);
+            PLOG.I("PvrLog trackingmode" + trackingmode);
             systemProp = GetSysproc();
-            PLOG.I("systemProp" + systemProp);
+            PLOG.I("PvrLog systemProp" + systemProp);
             enumindex = (int) GlobalIntConfigs.ENBLE_HAND6DOF_BY_HEAD;
             Render.UPvr_GetIntConfig(enumindex, ref enablehand6dofbyhead);
-            PLOG.I("enablehand6dofbyhead" + enablehand6dofbyhead);
-            if (trackingmode == 0 || trackingmode == 1 || (trackingmode == 3 && systemProp == 1))
+            PLOG.I("PvrLog enablehand6dofbyhead" + enablehand6dofbyhead);
+            if (trackingmode == 0 || trackingmode == 1 || (trackingmode == 3 && systemProp == 1) || (trackingmode == 3 && systemProp == 3))
             {
                 picoDevice = platFormType != 0;
                 javaPico2ReceiverClass = new UnityEngine.AndroidJavaClass("com.picovr.picovrlib.hummingbirdclient.HbClientReceiver");
@@ -107,12 +108,12 @@ public class Pvr_ControllerLink
 
     public bool IsServiceExisted()
     {
-        
+
         bool service = false;
 #if ANDROID_DEVICE
         Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<bool>(ref service, javaserviceClass, "isServiceExisted", activity,trackingmode);
 #endif
-        PLOG.I("serviceExisted ?" + service);
+        PLOG.I("PvrLog ServiceExisted ?" + service);
         return service;
 
     }
@@ -125,14 +126,14 @@ public class Pvr_ControllerLink
 
     public void BindService()
     {
-        PLOG.I("Start Bind");
+        PLOG.I("PvrLog Start Bind");
 #if ANDROID_DEVICE
         Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaserviceClass, "bindService", activity,trackingmode);
 #endif
     }
     public void UnBindService()
     {
-        PLOG.I("Start UnBind");
+        PLOG.I("PvrLog Start UnBind");
 #if ANDROID_DEVICE
         Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaserviceClass, "unbindService", activity,trackingmode);
 #endif
@@ -171,7 +172,7 @@ public class Pvr_ControllerLink
 #if ANDROID_DEVICE
         Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<int>(ref handness, javavractivityclass, "getPvrHandness", activity);
 #endif
-        PLOG.I("HandNess =" + handness);
+        PLOG.I("PvrLog HandNess =" + handness);
         return handness;
     }
     public void StartScan()
@@ -199,19 +200,19 @@ public class Pvr_ControllerLink
     public void ResetController(int num)
     {
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
             Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "resetControllerSensorState",num);
         }
-        else
+        if(goblinserviceStarted)
         {
-        Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaHummingbirdClass, "resetHbSensorState");
+            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaHummingbirdClass, "resetHbSensorState");
 		}
 #elif IOS_DEVICE
         Controller.Pvr_ResetSensor(3);
 
 #endif
-        PLOG.I("ResetController" + num);
+        PLOG.I("PvrLog ResetController" + num);
     }
 
     public void ConnectBLE()
@@ -222,7 +223,7 @@ public class Pvr_ControllerLink
         Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaHummingbirdClass, "connectHbController", hummingBirdMac);
 #endif
         }
-        PLOG.I("ConnectHBController" + hummingBirdMac);
+        PLOG.I("PvrLog ConnectHBController" + hummingBirdMac);
     }
 
     public void DisConnectBLE()
@@ -242,7 +243,7 @@ public class Pvr_ControllerLink
     public void setBinPath(string path, bool isasset)
     {
 #if ANDROID_DEVICE
-        Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod( javaHummingbirdClass, "setBinPath",path,isasset);
+        Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaHummingbirdClass, "setBinPath",path,isasset);
 #endif
     }
 
@@ -250,7 +251,10 @@ public class Pvr_ControllerLink
     {
         string type = "";
 #if ANDROID_DEVICE
-        Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<string>(ref type, javaHummingbirdClass, "getBLEImageType");
+        if (goblinserviceStarted)
+        {
+            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<string>(ref type, javaHummingbirdClass, "getBLEImageType");
+        }
 #endif
         return type;
     }
@@ -259,7 +263,10 @@ public class Pvr_ControllerLink
     {
         long version = 0L;
 #if ANDROID_DEVICE
-        Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<long>(ref version, javaHummingbirdClass, "getBLEVersion");
+        if (goblinserviceStarted)
+        {
+            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<long>(ref version, javaHummingbirdClass, "getBLEVersion");
+        }
 #endif
         return version;
     }
@@ -268,7 +275,10 @@ public class Pvr_ControllerLink
     {
         string type = "";
 #if ANDROID_DEVICE
-      Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<string>(ref type, javaHummingbirdClass, "getFileImageType");
+        if (goblinserviceStarted)
+        {
+            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<string>(ref type, javaHummingbirdClass, "getFileImageType");
+        }
 #endif
         return type;
     }
@@ -277,38 +287,39 @@ public class Pvr_ControllerLink
     {
         long version = 0L;
 #if ANDROID_DEVICE
-      Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<long>(ref version, javaHummingbirdClass, "getFileVersion");
+        if (goblinserviceStarted)
+        {
+            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<long>(ref version, javaHummingbirdClass, "getFileVersion");
+        }
 #endif
         return version;
     }
 
     public int GetControllerConnectionState(int num)
     {
-        //hb 0未连接 1连接中 2连接成功
-        //cv 0未连接 1连接成功
         int state = -1;
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
             Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<int>(ref state, javaCVClass, "getControllerConnectionState",num);
         }
-        else
+        if (goblinserviceStarted)
         {
             Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<int>(ref state, javaHummingbirdClass, "getHbConnectionState");
         }
 #endif
-        PLOG.D("GetControllerState:" + num  + "state:"+ state);
+        PLOG.D("PvrLog GetControllerState:" + num + "state:" + state);
         return state;
     }
 
     public void RebackToLauncher()
     {
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
             Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "startLauncher");
         }
-        else
+        if (goblinserviceStarted)
         {
             Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaHummingbirdClass, "startLauncher");
         }
@@ -318,45 +329,40 @@ public class Pvr_ControllerLink
     public void TurnUpVolume()
     {
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
             Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "turnUpVolume", activity);
         }
-        else
+        if (goblinserviceStarted)
         {
             Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaHummingbirdClass, "turnUpVolume", activity);
         }
 #endif
-        PLOG.I("TurnUpVolume");
+        PLOG.I("PvrLog TurnUpVolume");
     }
 
     public void TurnDownVolume()
     {
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
             Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "turnDownVolume", activity);
         }
-        else
+        if (goblinserviceStarted)
         {
             Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaHummingbirdClass, "turnDownVolume", activity);
         }
 #endif
-        PLOG.I("TurnDownVolume");
+        PLOG.I("PvrLog TurnDownVolume");
     }
     
-    /// <summary>
-    /// 获取goblin手柄的原始姿态数据
-    /// </summary>
-    /// <param name="hand">0,1分别代表两个手柄</param>
-    /// <returns></returns>
     public string GetHBControllerPoseData()
     {
         string data = "";
 #if ANDROID_DEVICE
         Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<string>(ref data, javaHummingbirdClass, "getHBSensorState");
 #endif
-        PLOG.D("HBControllerData" + data);
+        PLOG.D("PvrLog HBControllerData" + data);
         return data;
     }
 
@@ -375,22 +381,28 @@ public class Pvr_ControllerLink
 
 #endif
         Quaternion pose = new Quaternion(data[0], data[1], data[2], data[3]);
-        PLOG.D("CVControllerData " + hand + "Rotation:" + data[0] + data[1] + data[2] + data[3] + "Position:" +
+        Vector3 pos = new Vector3(data[4], data[5], data[6]);
+        PLOG.D("PvrLog CVControllerData " + hand + "Rotation:" + data[0] + data[1] + data[2] + data[3] + "Position:" +
                data[4] + data[5] + data[6] + "eulerAngles:" + pose.eulerAngles);
-        return data;
+
+        if (float.IsNaN(pose.x) || float.IsNaN(pose.y) || float.IsNaN(pose.z) || float.IsNaN(pose.w))
+        {
+            pose = Quaternion.identity;
+        } 
+        if (float.IsNaN(pos.x) || float.IsNaN(pos.y) || float.IsNaN(pos.z))
+        {
+            pos = Vector3.zero;
+        }
+        return new float[7] { pose.x, pose.y, pose.z, pose.w, pos.x, pos.y, pos.z };
     }
-    /// <summary>
-    /// 获取手柄的键值
-    /// </summary>
-    /// <param name="hand">0,1 分别代表两个手柄</param>
-    /// <returns></returns>
+   
     public string GetHBControllerKeyData()
     {
         string data = "";
 #if ANDROID_DEVICE
         Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<string>(ref data, javaHummingbirdClass, "getHBKeyEvent");
 #endif
-        PLOG.D("HBControllerKey" + data);
+        PLOG.D("PvrLog ControllerKey" + data);
         return data;
     }
 
@@ -400,14 +412,11 @@ public class Pvr_ControllerLink
 #if ANDROID_DEVICE
         Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(ref data, javaCVClass, "getControllerKeyEvent", hand);
 #endif
-        PLOG.D("CVControllerKey" + data[0] + data[1] + data[2] + data[3] + data[4] + data[5] + data[6] + data[7] +
+        PLOG.D("PvrLog ControllerKey" + data[0] + data[1] + data[2] + data[3] + data[4] + data[5] + data[6] + data[7] +
                data[8]);
         return data;
     }
-    /// <summary>
-    /// 自动连接Pico goblin手柄
-    /// </summary>
-    /// <param name="scanTimeMs">扫描时间，单位毫秒</param>
+   
     public void AutoConnectHbController(int scanTimeMs)
     {
 #if ANDROID_DEVICE
@@ -415,31 +424,23 @@ public class Pvr_ControllerLink
 #endif
     }
 
-    /// <summary>
-    /// 0 3dof 1 6dof
-    /// </summary>
-    /// <param name="headSensorState"></param>
-    /// <param name="handSensorState"></param>
     public void StartControllerThread(int headSensorState, int handSensorState)
     {
-        PLOG.I("StartControllerThread" + headSensorState + handSensorState);
+
 #if ANDROID_DEVICE
         Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "startControllerThread",headSensorState,handSensorState);
 #endif
+        PLOG.I("PvrLog StartControllerThread" + headSensorState + handSensorState);
     }
     public void StopControllerThread(int headSensorState, int handSensorState)
     {
-        PLOG.I("StopControllerThread" + headSensorState + handSensorState);
 #if ANDROID_DEVICE
         Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "stopControllerThread",headSensorState,handSensorState);
 #endif
+        PLOG.I("PvrLog StopControllerThread" + headSensorState + handSensorState);
     }
 
-    /// <summary>
-    /// 获取手柄陀螺仪数据
-    /// </summary>
-    /// <param name="num">参数为0,1，分别代表两个手柄</param>
-    /// <returns></returns>
+    
     public Vector3 GetAngularVelocity(int num)
     {
         var angulae = new float[3] { 0, 0, 0 };
@@ -447,11 +448,11 @@ public class Pvr_ControllerLink
         {
 #if ANDROID_DEVICE
 
-            if (cvserviceBindState)
+            if (neoserviceStarted)
             {
                 Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(ref angulae, javaCVClass, "getControllerAngularVelocity", num);
             }
-            else
+            if (goblinserviceStarted)
             {
                 Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(ref angulae, javaHummingbirdClass, "getHbAngularVelocity");
             }
@@ -461,75 +462,77 @@ public class Pvr_ControllerLink
         {
             Debug.Log(e.ToString());
         }
-        var aglr = new Vector3(angulae[0], angulae[1], angulae[2]);
-        return aglr;
+        PLOG.D("PvrLog Gyro:" + angulae[0] + angulae[1] + angulae[2]);
+        if (!float.IsNaN(angulae[0]) && !float.IsNaN(angulae[1]) && !float.IsNaN(angulae[2]))
+        {
+            return new Vector3(angulae[0], angulae[1], angulae[2]);
+        }
+        return new Vector3(0, 0, 0);
     }
 
-    /// <summary>
-    /// 获取手柄加速度数据
-    /// </summary>
-    /// <returns></returns>
-    public Vector3 GetAcceleration(int num )
+    
+    public Vector3 GetAcceleration(int num)
     {
         var accel = new float[3] { 0, 0, 0 };
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
             Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(ref accel, javaCVClass, "getControllerAcceleration", num);
         }
-        else
+        if(goblinserviceStarted)
         {
             Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(ref accel, javaHummingbirdClass, "getHbAcceleration");
         }
 
 #endif
-        var accele = new Vector3(accel[0], accel[1], accel[2]);
-        return accele;
+        PLOG.D("PvrLog Acce:" + accel[0] + accel[1] + accel[2]);
+        if (!float.IsNaN(accel[0]) && !float.IsNaN(accel[1]) && !float.IsNaN(accel[2]))
+        {
+            return new Vector3(accel[0], accel[1], accel[2]);
+        }
+        return new Vector3(0, 0, 0);
     }
 
-    /// <summary>
-    /// 获取当前连接的手柄的MAC地址
-    /// </summary>
-    /// <returns></returns>
     public string GetConnectedDeviceMac()
     {
         string mac = "";
 #if ANDROID_DEVICE
-        if (hbserviceBindState)
+        if (goblinserviceStarted)
         {
             Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<string>(ref mac, javaHummingbirdClass, "getConnectedDeviceMac");
         }
 #endif
+        PLOG.I("PvrLog ConnectedDeviceMac:" + mac);
         return mac;
     }
-    /// <summary>
-    /// 手柄振动接口
-    /// </summary>
-    /// <param name="hand">0,1分别代表两个手柄</param>
-    /// <param name="strength">振动强度0-255</param>
+  
     public void VibateController(int hand, int strength)
     {
 #if ANDROID_DEVICE
-        Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "vibrateControllerStrength", hand,strength);
+        if (neoserviceStarted)
+        {
+            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "vibrateControllerStrength", hand, strength);
+        }
 #endif
     }
-    
+
     public int GetMainControllerIndex()
     {
-        int index = -1;
+        int index = 0;
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
             Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<int>(ref index, javaCVClass, "getMainControllerIndex");
         }
 #endif
+        PLOG.I("PvrLog MainControllerIndex:" + index);
         return index;
     }
-    
+
     public void SetMainController(int index)
     {
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "setMainController",index); 
         }
@@ -538,176 +541,244 @@ public class Pvr_ControllerLink
     public void ResetHeadSensorForController()
     {
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "resetHeadSensorForController");
         }
 #endif
     }
-    //获取版本号 deviceType：0-station 1-手柄0  2-手柄1
+
     public void GetDeviceVersion(int deviceType)
     {
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "getDeviceVersion",deviceType); 
         }
 #endif
     }
-    //获取手柄Sn号  controllerSerialNum : 0-手柄0  1-手柄1
+ 
     public void GetControllerSnCode(int controllerSerialNum)
     {
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "getControllerSnCode",controllerSerialNum); 
         }
 #endif
     }
-    //解绑手柄 controllerSerialNum : 0-手柄0  1-手柄1
+ 
     public void SetControllerUnbind(int controllerSerialNum)
     {
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "setControllerUnbind",controllerSerialNum); 
         }
 #endif
     }
-    //重启station
+
     public void SetStationRestart()
     {
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "setStationRestart"); 
         }
 #endif
     }
-    //发起station OTA升级
+
     public void StartStationOtaUpdate()
     {
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "startStationOtaUpdate"); 
         }
 #endif
     }
-    //发起手柄ota升级 mode：1-RF 升级通讯模块 2-升级STM32模块 ； controllerSerialNum : 0-手柄0  1-手柄1
+  
     public void StartControllerOtaUpdate(int mode, int controllerSerialNum)
     {
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "startControllerOtaUpdate",mode,controllerSerialNum); 
         }
 #endif
     }
-    // 进入配对模式 controllerSerialNum：0-手柄0  1-手柄1
+    
     public void EnterPairMode(int controllerSerialNum)
     {
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "enterPairMode",controllerSerialNum); 
         }
 #endif
     }
-    //手柄关机controllerSerialNum：0-手柄0  1-手柄1
+   
     public void SetControllerShutdown(int controllerSerialNum)
     {
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "setControllerShutdown",controllerSerialNum); 
         }
 #endif
     }
-    // 获取当前station的配对状态 返回值0-未配对状态 1-正在配对状态
+    
     public int GetStationPairState()
     {
         int index = -1;
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<int>(ref index,javaCVClass, "getStationPairState"); 
         }
 #endif
-        PLOG.I("StationPairState" + index);
+        PLOG.I("PvrLog StationPairState" + index);
         return index;
     }
-    //获取station ota升级进度
+   
     public int GetStationOtaUpdateProgress()
     {
         int index = -1;
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<int>(ref index,javaCVClass, "getStationOtaUpdateProgress"); 
         }
 #endif
-        PLOG.I("StationOtaUpdateProgress" + index);
+        PLOG.I("PvrLog StationOtaUpdateProgress" + index);
         return index;
     }
-    //获取Controller ota升级进度
+    
     public int GetControllerOtaUpdateProgress()
     {
         int index = -1;
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<int>(ref index,javaCVClass, "getControllerOtaUpdateProgress"); 
         }
 #endif
-        PLOG.I("ControllerOtaUpdateProgress" + index);
+        PLOG.I("PvrLog ControllerOtaUpdateProgress" + index);
         return index;
     }
 
-    //同时获取手柄的版本号和SN号  controllerSerialNum：0-手柄0  1-手柄1
     public void GetControllerVersionAndSN(int controllerSerialNum)
     {
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "getControllerVersionAndSN",controllerSerialNum); 
         }
 #endif
     }
-
-    //获取手柄的唯一识别码
-    public void  GetControllerUniqueID()
+    
+    public void GetControllerUniqueID()
     {
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "getControllerUniqueID"); 
         }
 #endif
     }
-
-    //将station从当前的配对模式中中断出来
+    
     public void InterruptStationPairMode()
     {
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaCVClass, "interruptStationPairMode"); 
         }
 #endif
     }
-    //获取当前手柄的能力模式（3dof手柄还是6dof手柄）
+
     public int GetControllerAbility(int controllerSerialNum)
     {
         int index = -1;
 #if ANDROID_DEVICE
-        if (cvserviceBindState)
+        if (neoserviceStarted)
         {
            Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<int>(ref index,javaCVClass, "getControllerAbility",controllerSerialNum);
         }
 #endif
+        PLOG.I("PvrLog ControllerAbility:" + index);
         return index;
     }
 
+    public void SwitchHomeKey(bool state)
+    {
+        switchHomeKey = state;
+    }
+
+    public void SetBootReconnect()
+    {
+#if ANDROID_DEVICE
+        Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod(javaHummingbirdClass, "setBootReconnect");
+#endif
+    }
+
+    public int GetTriggerKeyEvent()
+    {
+        int key = -1;
+#if ANDROID_DEVICE
+        Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<int>(ref key,javaHummingbirdClass, "getTriggerKeyEvent");
+#endif
+        PLOG.D("PvrLog GoblinControllerTriggerKey:" + key);
+        return key;
+    }
+    //Acquisition of equipment temperature
+    public int GetTemperature()
+    {
+        int value = -1;
+#if ANDROID_DEVICE
+        Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<int>(ref value,javaHummingbirdClass, "getTemperature");
+#endif
+        PLOG.I("PvrLog Temperature:" + value);
+        return value;
+    }
+    //Get the device type
+    public int GetDeviceType()
+    {
+        int type = -1;
+#if ANDROID_DEVICE
+        Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<int>(ref type,javaHummingbirdClass, "getDeviceType");
+#endif
+        PLOG.I("PvrLog DeviceType:" + type);
+        return type;
+    }
+    public string GetHummingBird2SN()
+    {
+        string type = "";
+#if ANDROID_DEVICE
+        Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<string>(ref type,javaHummingbirdClass, "getHummingBird2SN");
+#endif
+        PLOG.I("PvrLog HummingBird2SN:" + type);
+        return type;
+    }
+
+    public string GetControllerVersion()
+    {
+        string type = "";
+#if ANDROID_DEVICE
+        Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<string>(ref type,javaHummingbirdClass, "getControllerVersion");
+#endif
+        PLOG.I("PvrLog ControllerVersion:" + type);
+        return type;
+    }
+
+    public bool IsEnbleTrigger()
+    {
+        bool state = false;
+#if ANDROID_DEVICE
+        Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<bool>(ref state,javaHummingbirdClass, "isEnbleTrigger");
+#endif
+        PLOG.I("PvrLog IsEnbleTrigger:" + state);
+        return state;
+    }
 
 }

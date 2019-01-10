@@ -4,4 +4,7 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scene/PicoNeoHandleSwitch.unity
+    guid: 55f7b5e30d0e7be46a64d9093b377110

@@ -44,11 +44,10 @@ public class Pvr_UnitySDKSensor
 
     /************************************   Public Interfaces **********************************/
     #region Public Interfaces
-
-    //开始进入3dof模式
+        
     public delegate void Enter3DofModel();
     public static event Enter3DofModel Enter3DofModelEvent;
-    //开始退出3dof模式
+  
     public delegate void Exit3DofModel();
     public static event Exit3DofModel Exit3DofModelEvent;
 
@@ -165,6 +164,27 @@ public class Pvr_UnitySDKSensor
         }
         return enable;
     }
+	
+    public bool ResetUnitySDKSensorAll()
+    {
+        bool enable = false;
+        try
+        {
+            if (Pvr_UnitySDKAPI.Sensor.UPvr_ResetSensorAll((int)sensorIndex) == 0)
+            {
+                enable = true;
+                Debug.LogError("ResetUnitySDKSensorAll OK! ");
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError("ResetUnitySDKSensorAll ERROR! " + e.Message);
+            throw;
+        }
+        return enable;
+    }
+    
+	
     public bool OptionalResetUnitySDKSensor(int resetRot, int resetPos)
     {
         bool enable = false;
@@ -202,7 +222,6 @@ public class Pvr_UnitySDKSensor
                     {
                         if (!dofClock)
                         {
-                            //数据质量差，开始进入3dof模式
                             if (Enter3DofModelEvent != null)
                                 Enter3DofModelEvent();
                             dofClock = true;
@@ -212,7 +231,6 @@ public class Pvr_UnitySDKSensor
                     {
                         if (dofClock)
                         {
-                            //数据质量好，进入6dof模式
                             if (Exit3DofModelEvent != null)
                                 Exit3DofModelEvent();
                             dofClock = false;
@@ -232,7 +250,7 @@ public class Pvr_UnitySDKSensor
                     {
                         UnityPoasition = new Vector3(px * Pvr_UnitySDKManager.SDK.MovingRatios, py * Pvr_UnitySDKManager.SDK.MovingRatios, -pz * Pvr_UnitySDKManager.SDK.MovingRatios);
                     }
-                    PLOG.D("6DoFHead" + "Rotation" + x + y + -z + -w + "Position" + px + py + -pz + "eulerAngles" + UnityQutation.eulerAngles);
+                    PLOG.D("PvrLog 6DoFHead" + "Rotation" + x + y + -z + -w + "Position" + px + py + -pz + "eulerAngles" + UnityQutation.eulerAngles);
                 }
                 if (returns == -1)
                     Debug.Log("sesnor update --- GetUnitySDKSensorState     -1    ");

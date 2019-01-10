@@ -232,7 +232,7 @@ public class cubecolor : MonoBehaviour {
         {
             txt.text = word + "音量+按钮被按下";
         }
-        else if (Controller.Upvr_ControllerTriggerClick(num))
+        else if (Controller.UPvr_GetKey(num, Pvr_KeyCode.TRIGGER))
         {
            
             txt.text = word + "Trigger按钮被按下";

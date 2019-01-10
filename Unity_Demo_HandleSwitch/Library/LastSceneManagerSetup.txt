@@ -1,4 +1,4 @@
 sceneSetups:
-- path: Assets/PicoMobileSDK/Pvr_TouchPad/Scenes/TouchPad.unity
+- path: Assets/Scene/PicoNeoHandleSwitch.unity
   isLoaded: 1
   isActive: 1

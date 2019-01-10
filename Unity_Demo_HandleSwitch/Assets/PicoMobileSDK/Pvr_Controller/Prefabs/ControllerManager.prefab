@@ -41,7 +41,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 236af6823ed5bed4fa9704cf9cb74dce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Swipewidth: 100
   toast: {fileID: 0}
   ShowPowerToast: 1
 --- !u!114 &11442720
@@ -60,7 +59,7 @@ MonoBehaviour:
   Axis: 0
   Gazetype: 1
   ElbowHeight: 0
-  ElbowDepth: 0
+  ElbowDepth: 0.05
   PointerTiltAngle: 15
 --- !u!1001 &100100000
 Prefab:
@@ -72,6 +71,14 @@ Prefab:
     - target: {fileID: 0}
       propertyPath: ShowPowerToast
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 0}
+      propertyPath: ElbowHeight
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 0}
+      propertyPath: ElbowDepth
+      value: .0500000007
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 0}

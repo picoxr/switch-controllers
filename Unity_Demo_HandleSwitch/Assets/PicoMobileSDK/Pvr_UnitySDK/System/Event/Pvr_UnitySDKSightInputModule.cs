@@ -39,10 +39,7 @@ public class Pvr_UnitySDKSightInputModule : BaseInputModule
 
     private PointerEventData pointerData;
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <returns></returns>
+ 
     public override bool ShouldActivateModule()
     {
 
@@ -53,9 +50,7 @@ public class Pvr_UnitySDKSightInputModule : BaseInputModule
         return Pvr_UnitySDKManager.SDK.VRModeEnabled;
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
+ 
     public override void DeactivateModule()
     {
         base.DeactivateModule();
@@ -72,19 +67,11 @@ public class Pvr_UnitySDKSightInputModule : BaseInputModule
         }
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <param name="pointerId"></param>
-    /// <returns></returns>
     public override bool IsPointerOverGameObject(int pointerId)
     {
         return pointerData != null && pointerData.pointerEnter != null;
     }
-
-    /// <summary>
-    /// 
-    /// </summary>
+    
     public override void Process()
     {
         CastRayFromGaze();
@@ -93,10 +80,7 @@ public class Pvr_UnitySDKSightInputModule : BaseInputModule
         HandlePendingClick();
         HandleTrigger();
     }
-
-    /// <summary>
-    /// 
-    /// </summary>
+    
     private void CastRayFromGaze()
     {
         if (pointerData == null)
@@ -109,10 +93,7 @@ public class Pvr_UnitySDKSightInputModule : BaseInputModule
         pointerData.pointerCurrentRaycast = FindFirstRaycast(m_RaycastResultCache);
         m_RaycastResultCache.Clear();
     }
-
-    /// <summary>
-    /// 
-    /// </summary>
+    
     private void UpdateCurrentObject()
     {
         // Send enter events and update the highlight.
@@ -129,10 +110,7 @@ public class Pvr_UnitySDKSightInputModule : BaseInputModule
             eventSystem.SetSelectedGameObject(null, pointerData);
         }
     }
-
-    /// <summary>
-    /// 
-    /// </summary>
+    
     private void PlaceCursor()
     {
         if (cursor == null)
@@ -152,10 +130,7 @@ public class Pvr_UnitySDKSightInputModule : BaseInputModule
 
         }
     }
-
-    /// <summary>
-    /// 
-    /// </summary>
+    
     private void HandlePendingClick()
     {
         if (!pointerData.eligibleForClick)
@@ -179,9 +154,6 @@ public class Pvr_UnitySDKSightInputModule : BaseInputModule
         pointerData.clickCount = 0;
     }
 
-    /// <summary>
-    /// 
-    /// </summary>
     private void HandleTrigger()
     {
         if (!Pvr_UnitySDKManager.SDK.picovrTriggered)

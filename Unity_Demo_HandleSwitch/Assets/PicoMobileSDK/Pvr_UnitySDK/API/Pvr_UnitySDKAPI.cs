@@ -37,7 +37,12 @@ namespace Pvr_UnitySDKAPI
         ENBLE_HAND6DOF_BY_HEAD,
         ENBLE_6DOF_GLOBAL_TRACKING,
         TARGET_FRAME_RATE,
-        iShowFPS
+        iShowFPS,
+        SensorMode,
+        LOGICFLOW,// 0 ,1 Viewer	
+        EYE_TEXTURE_RES_HIGH,    
+        EYE_TEXTURE_RES_NORMAL,
+        iCtrlModelLoadingPri
     };
 
     public enum GlobalFloatConfigs
@@ -71,6 +76,12 @@ namespace Pvr_UnitySDKAPI
         BD_16 = 16,
         BD_24 = 24,
     }
+
+    public enum RenderTextureLevel
+    {
+        Normal,
+        High
+    }
     public enum Sensorindex
     {
         Default = 0,
@@ -84,16 +95,7 @@ namespace Pvr_UnitySDKAPI
         LeftEye,
         RightEye
     }
-
-    public enum DeviceMode
-    {
-        PicoNeoDK,
-        PicoNeoDKS,
-        PicoNeo,
-        PicoGoblin,
-        Other,
-    }
-
+    
     public enum HeadDofNum
     {
         ThreeDof,
@@ -111,7 +113,7 @@ namespace Pvr_UnitySDKAPI
         One,
         Two
     }
-    
+
     [StructLayout(LayoutKind.Sequential)]
     public struct EyeSetting
     {
@@ -166,6 +168,8 @@ namespace Pvr_UnitySDKAPI
 
         [DllImport(LibFileName, CallingConvention = CallingConvention.Cdecl)]
         private static extern int Pvr_ResetSensor(int index);
+        [DllImport(LibFileName, CallingConvention = CallingConvention.Cdecl)]
+        private static extern int Pvr_ResetSensorAll(int index);
 
 
         [DllImport(LibFileName, CallingConvention = CallingConvention.Cdecl)]
@@ -186,7 +190,7 @@ namespace Pvr_UnitySDKAPI
         [DllImport(LibFileName, CallingConvention = CallingConvention.Cdecl)]
         private static extern int Pvr_GetSensorMagnet(int index, ref float x, ref float y, ref float z);
         [DllImport(LibFileName, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int Pvr_Get6DofSensorQualityStatus(); 
+        private static extern int Pvr_Get6DofSensorQualityStatus();
         [DllImport(LibFileName, CallingConvention = CallingConvention.Cdecl)]
         private static extern bool Pvr_Get6DofSafePanelFlag();
         #endregion
@@ -195,19 +199,18 @@ namespace Pvr_UnitySDKAPI
 
         public static bool UPvr_Pvr_Get6DofSafePanelFlag()
         {
-#if UNITY_ANDROID && !UNITY_EDITOR
+#if ANDROID_DEVICE
             return Pvr_Get6DofSafePanelFlag();
-#else
-            return true;
 #endif
+            return false;
+
         }
         public static int UPvr_Init(int index)
         {
-#if UNITY_STANDALONE_WIN
-            return 0;
-#else
+#if ANDROID_DEVICE
             return Pvr_Init(index);
 #endif
+            return 0;
         }
         public static void UPvr_InitPsensor()
         {
@@ -348,6 +351,21 @@ namespace Pvr_UnitySDKAPI
 #endif
         }
 
+        public static bool Pvr_IsHead6dofReset()
+        {
+            bool state = false;
+#if ANDROID_DEVICE
+            try
+            {
+                Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<bool>(ref state,Pvr_UnitySDKRender.javaSysActivityClass, "isHead6dofReset", Pvr_UnitySDKManager.pvr_UnitySDKRender.activity);
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(" Error :" + e.ToString());
+            }
+#endif
+            return state;
+        }
         public static int Pvr_GetAndroidPsensorState()
         {
             int psensor = -1;
@@ -377,6 +395,13 @@ namespace Pvr_UnitySDKAPI
             }
 #endif
         }
+        public static int UPvr_ResetSensorAll(int index)
+        {
+#if ANDROID_DEVICE               
+                return Pvr_ResetSensorAll(index);   
+#endif
+            return 0;
+        }  
         #endregion
 
     }
@@ -491,7 +516,7 @@ namespace Pvr_UnitySDKAPI
     [StructLayout(LayoutKind.Sequential)]
     public struct System
     {
-        const string UnitySDKVersion = "2.5.0.8";
+        const string UnitySDKVersion = "2.7.6.1";
 
         #region Android
 
@@ -502,9 +527,7 @@ namespace Pvr_UnitySDKAPI
 		[DllImport(LibFileName, CallingConvention = CallingConvention.Cdecl)]
 		public static extern void Pvr_SetInitActivity(IntPtr activity, IntPtr vrActivityClass);
        
-        /// <summary>
-        /// 调用静态方法
-        /// </summary>
+        
         /// <typeparam name="T"></typeparam>
         /// <param name="result"></param>
         /// <param name="jclass"></param>
@@ -538,9 +561,7 @@ namespace Pvr_UnitySDKAPI
             }
         }
 
-        /// <summary>
-        ///调用方法
-        /// </summary>
+        
         /// <typeparam name="T"></typeparam>
         /// <param name="result"></param>
         /// <param name="jobj"></param>
@@ -560,9 +581,7 @@ namespace Pvr_UnitySDKAPI
                 return false;
             }
         }
-        /// <summary>
-        /// 调用方法
-        /// </summary>
+       
         /// <typeparam name="T"></typeparam>
         /// <param name="result"></param>
         /// <param name="jobj"></param>
@@ -609,14 +628,14 @@ namespace Pvr_UnitySDKAPI
         #region Public Static Funcation
         public static string UPvr_GetSDKVersion()
         {
-#if !UNITY_STANDALONE_WIN
+#if ANDROID_DEVICE
             IntPtr ptr = Pvr_GetSDKVersion();
             if (ptr != IntPtr.Zero)
             {
                 return Marshal.PtrToStringAnsi(ptr);
             }
 #endif
-            return null;
+            return "";
         }
 
         public static string UPvr_GetUnitySDKVersion()
@@ -624,32 +643,13 @@ namespace Pvr_UnitySDKAPI
             return UnitySDKVersion;
 
         }
-        public static DeviceMode UPvr_GetDeviceMode()
+        public static string UPvr_GetDeviceMode()
         {
+            string devicemode = "";
 #if ANDROID_DEVICE
-            string devicemode = SystemInfo.deviceModel;
-            if (devicemode.Equals("Pico Pico Neo DK", StringComparison.InvariantCultureIgnoreCase))
-            {
-                return DeviceMode.PicoNeoDK;
-            }
-            else if (devicemode.Equals("Pico Pico Neo DKS", StringComparison.InvariantCultureIgnoreCase))
-            {
-                return DeviceMode.PicoNeoDKS;
-            }
-            else if (devicemode.Equals("Pico Pico Goblin", StringComparison.InvariantCultureIgnoreCase))
-            {
-                return DeviceMode.PicoGoblin;
-            }
-            else if (devicemode.Equals("Pico Pico Neo", StringComparison.InvariantCultureIgnoreCase))
-            {
-                return DeviceMode.PicoNeo;
-            }
-            else
-            {
-                return DeviceMode.Other;
-            }
+            devicemode = SystemInfo.deviceModel;
 #endif
-            return DeviceMode.Other; ;
+            return devicemode;
         }
 
         public static string UPvr_GetDeviceModel()
@@ -775,7 +775,14 @@ namespace Pvr_UnitySDKAPI
         }
         #endregion
 
-
+        public static bool UPvr_checkDevice(string packagename)
+        {
+            bool value = false;
+#if ANDROID_DEVICE
+             Pvr_UnitySDKAPI.System.UPvr_CallStaticMethod<bool>(ref value,Pvr_UnitySDKRender.javaVrActivityClass, "checkDevice", packagename,UPvr_GetCurrentActivity());
+#endif
+            return value;
+        }
     }
 
 

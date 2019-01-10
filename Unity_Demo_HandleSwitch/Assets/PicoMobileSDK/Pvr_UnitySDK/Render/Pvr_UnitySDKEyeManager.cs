@@ -116,26 +116,23 @@ public class Pvr_UnitySDKEyeManager : MonoBehaviour
 
     void Update()
     {
-        ControllerCamera.enabled = !Pvr_UnitySDKManager.SDK.VRModeEnabled;
 
+        ControllerCamera.enabled = !Pvr_UnitySDKManager.SDK.VRModeEnabled;
+#if UNITY_EDITOR
         for (int i = 0; i < Eyes.Length; i++)
         {
-            Eyes[i].EyeRender();
-        }
-    }
+            Eyes[i].eyecamera.enabled = Pvr_UnitySDKManager.SDK.VRModeEnabled;
+        } 
+#endif
 
-    void OnPreCull()
-    {
-        if (!Pvr_UnitySDKManager.SDK.VRModeEnabled)
+        if (!Pvr_UnitySDKManager.SDK.IsViewerLogicFlow)
         {
             for (int i = 0; i < Eyes.Length; i++)
             {
-                Eyes[i].eyecamera.enabled = false;
+                Eyes[i].EyeRender();
             }
-            return;
         }
     }
-
     void OnDisable()
     {
         StopAllCoroutines();

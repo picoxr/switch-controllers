@@ -1,0 +1,2 @@
+手柄与交互场景：Pvr_Controller_ForCV和Pvr_Controller_ForGoblin
+双手柄切换场景：PicoNeoDemo

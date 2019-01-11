@@ -10,13 +10,13 @@
 -  PicoNeo Switch between main and secondary handles
 -  Judge handle button response event
 
-场景主要脚本是ChangeHand，在应用第一次运行时调用Pvr_ControllerManager.SetControllerServiceBindStateEvent委托
-再用Controller.UPvr_GetMainHandNess()方法判断当前手柄主副。
+Main Code **ChangeHand**，Called on the first run of the application **Pvr_ControllerManager.SetControllerServiceBindStateEvent** delegate
+later **Controller.UPvr_GetMainHandNess()** Judge the main and secondary of the current handle.
 
 ## Usage：
 - Scene： Assets -> Scene -> PicoNeoHandleSwitch
 
-- 点击按钮 "切换手柄" 切换主副手柄
-- 本demo适用于PicoNeo
-- 切换功能需要同时连接两个手柄
+- click the button "switch handle" to switch the main and secondary handles
+- this demo is suitable for PicoNeo
+- switch function requires two handles to be connected at the same time
 

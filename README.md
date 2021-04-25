@@ -16,3 +16,5 @@
 - Click the button "switch handle" to switch the main and secondary handles
 - Switch function requires two controllers connected at the same time
 
+## Note:
+- If you have any questions/comments, please raise requests at [**PicoDevSupport Portal**](https://picodevsupport.atlassian.net/servicedesk/customer/user/login?

@@ -1,6 +1,8 @@
 
 ## Unity_Demo_SwitchPicoNeoControllers
 
+- If you have any questions/comments, please visit [**Pico Developer Answers**](https://devanswers.pico-interactive.com/) and raise your question there.
+
 ## Unity Versions：
 - 2017.1.0f3 and later
 
@@ -16,5 +18,3 @@
 - Click the button "switch handle" to switch the main and secondary handles
 - Switch function requires two controllers connected at the same time
 
-## Note:
-- If you have any questions/comments, please raise requests at [**PicoDevSupport Portal**](https://picodevsupport.atlassian.net/servicedesk/customer/user/login?
